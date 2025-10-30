@@ -1,0 +1,33 @@
+import { Button } from "@/components/ui/button";
+import { File, MessageSquare, Plus, Trash2 } from "lucide-react";
+
+export const HistorySidebar = ({ history, onSelectChat, onDeleteChat, onRenameChat, onNewChat }) => {
+  return (
+    <aside className="bg-background flex h-full w-64 flex-col border-r p-4">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Chat History</h2>
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={onNewChat}>
+          <Plus size={16} />
+        </Button>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        {history.map((chat, index) => (
+          <div key={index} className="group flex items-center justify-between rounded-lg p-2 hover:bg-muted">
+            <div className="flex items-center gap-2" onClick={() => onSelectChat(chat.messages)}>
+              <MessageSquare size={16} />
+              <span>{chat.name}</span>
+            </div>
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100">
+              <Button variant="ghost" size="icon" className="rounded-full" onClick={() => onRenameChat(index)}>
+                <File size={16} />
+              </Button>
+              <Button variant="ghost" size="icon" className="rounded-full" onClick={() => onDeleteChat(index)}>
+                <Trash2 size={16} />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
+};
