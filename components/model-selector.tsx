@@ -1,11 +1,8 @@
 "use client"
 
-import { useState } from "react"
 import { Button } from "./ui/button"
-import { Check, ChevronsUpDown } from "lucide-react"
-import { cn } from "@/lib/utils"
-
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip"
+import { ChevronsUpDown } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 
 interface ModelSelectorProps {
   selectedModel: string;
@@ -14,44 +11,30 @@ interface ModelSelectorProps {
 }
 
 export function ModelSelector({ selectedModel, onModelChange, models }: ModelSelectorProps) {
-  const [isOpen, setIsOpen] = useState(false)
-
   const truncate = (str: string, n: number) => {
     return str.length > n ? str.slice(0, n - 1) + "..." : str
   }
 
   return (
-    <div className="relative">
-      <Button
-        variant="ghost"
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2"
-      >
-        {truncate(selectedModel, 20)}
-        <ChevronsUpDown className="size-4" />
-      </Button>
-      {isOpen && (
-        <div className="absolute top-full mt-2 w-full rounded-md border bg-zinc-900/80 p-2 backdrop-blur-md">
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          className="flex items-center gap-2"
+        >
+          {truncate(selectedModel, 20)}
+          <ChevronsUpDown className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuRadioGroup value={selectedModel} onValueChange={onModelChange}>
           {models.map((model) => (
-            <Tooltip key={model}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="flex w-full items-center justify-between"
-                  onClick={() => {
-                    onModelChange(model)
-                    setIsOpen(false)
-                  }}
-                >
-                  <span>{truncate(model, 20)}</span>
-                  {selectedModel === model && <Check className="size-4" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent sideOffset={12}>{model}</TooltipContent>
-            </Tooltip>
+            <DropdownMenuRadioItem key={model} value={model}>
+              {truncate(model, 20)}
+            </DropdownMenuRadioItem>
           ))}
-        </div>
-      )}
-    </div>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

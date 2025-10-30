@@ -115,13 +115,10 @@ export function ChatForm({ className, ...props }: React.ComponentProps<"form">) 
     setHistory(newHistory)
   }
 
-  const handleRenameChat = (index: number) => {
-    const newName = prompt("Enter a new name for the chat:")
-    if (newName) {
-      const newHistory = [...history]
-      newHistory[index].name = newName
-      setHistory(newHistory)
-    }
+  const handleRenameChat = (index: number, newName: string) => {
+    const newHistory = [...history]
+    newHistory[index].name = newName
+    setHistory(newHistory)
   }
 
   return (
