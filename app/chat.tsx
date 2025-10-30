@@ -22,6 +22,17 @@ export function ChatForm({ className, ...props }: React.ComponentProps<"form">) 
   const [history, setHistory] = useState<ChatHistoryItem[]>([])
   const [currentChat, setCurrentChat] = useState<string>("")
   const [selectedModel, setSelectedModel] = useState("qwen3:0.6b")
+  const [models, setModels] = useState<string[]>([])
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      const response = await fetch("/api/models")
+      const data = await response.json()
+      setModels(data.models)
+    }
+    fetchModels()
+  }, [])
 
   useEffect(() => {
     const savedHistory = localStorage.getItem("chatHistory")
@@ -115,7 +126,7 @@ export function ChatForm({ className, ...props }: React.ComponentProps<"form">) 
 
   return (
     <div className="flex h-full">
-      <Navbar selectedModel={selectedModel} onModelChange={setSelectedModel} />
+      <Navbar selectedModel={selectedModel} onModelChange={setSelectedModel} models={models} />
       <HistorySidebar history={history} onSelectChat={handleSelectChat} onDeleteChat={handleDeleteChat} onRenameChat={handleRenameChat} onNewChat={handleNewChat} />
       <main
         className={cn(
