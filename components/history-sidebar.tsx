@@ -2,8 +2,13 @@ import { Button } from "@/components/ui/button";
 import { File, MessageSquare, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { RenameChatDialog } from "./rename-chat-dialog";
+import { useStore } from "@/lib/store";
 
-export const HistorySidebar = ({ history, onSelectChat, onDeleteChat, onRenameChat, onNewChat }) => {
+export const HistorySidebar = ({ onSelectChat, onNewChat }) => {
+  const history = useStore((state) => state.history);
+  const deleteHistoryItem = useStore((state) => state.deleteHistoryItem);
+  const renameHistoryItem = useStore((state) => state.renameHistoryItem);
+
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [chatToRename, setChatToRename] = useState(null);
 
@@ -13,7 +18,7 @@ export const HistorySidebar = ({ history, onSelectChat, onDeleteChat, onRenameCh
   };
 
   const handleRename = (newName) => {
-    onRenameChat(chatToRename.index, newName);
+    renameHistoryItem(chatToRename.index, newName);
   };
 
   return (
@@ -35,7 +40,7 @@ export const HistorySidebar = ({ history, onSelectChat, onDeleteChat, onRenameCh
               <Button variant="ghost" size="icon" className="rounded-full" onClick={() => handleRenameClick({ index, name: chat.name })}>
                 <File size={16} />
               </Button>
-              <Button variant="ghost" size="icon" className="rounded-full" onClick={() => onDeleteChat(index)}>
+              <Button variant="ghost" size="icon" className="rounded-full" onClick={() => deleteHistoryItem(index)}>
                 <Trash2 size={16} />
               </Button>
             </div>

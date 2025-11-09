@@ -6,11 +6,11 @@ const ollamaModel=createOllama({
 })
 
 export async function POST(req: Request) {
-  const { messages, model }: { messages: CoreMessage[], model: string } = await req.json()
+  const { messages, model, system }: { messages: CoreMessage[], model: string, system: string } = await req.json()
   
   const result = streamText({
     model: ollamaModel(model || "qwen3:0.6b"),
-    system: "You are a helpful assistant.",
+    system: system || "You are a helpful assistant.",
     messages,
   })
 

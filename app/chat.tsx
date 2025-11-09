@@ -2,53 +2,53 @@
 
 import { cn } from "@/lib/utils"
 import { useChat } from "@ai-sdk/react"
-import { Paperclip, Send } from "lucide-react"
+import { Paperclip, Send, StopCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { AutoResizeTextarea } from "@/components/autoresize-textarea"
 import { HistorySidebar } from "@/components/history-sidebar"
-import { useEffect, useState } from "react"
-import { Navbar } from "@/components/navbar";
+import { useEffect, useCallback } from "react"
+import { Navbar } from "@/components/navbar"
 import { ChatHeader } from "@/components/chat-header"
 import { InitialPrompts } from "@/components/initial-prompts"
 import { MessageList } from "@/components/message-list"
-
-interface ChatHistoryItem {
-  name: string;
-  messages: string;
-}
+import { useStore } from "@/lib/store"
 
 export function ChatForm({ className, ...props }: React.ComponentProps<"form">) {
-  const [history, setHistory] = useState<ChatHistoryItem[]>([])
-  const [currentChat, setCurrentChat] = useState<string>("")
-  const [selectedModel, setSelectedModel] = useState("qwen3:0.6b")
-  const [models, setModels] = useState<string[]>([])
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const {
+    history,
+    currentChat,
+    selectedModel,
+    models,
+    systemPrompt,
+    isSidebarOpen,
+    setHistory,
+    setCurrentChat,
+    setSelectedModel,
+    setModels,
+    addHistoryItem,
+    updateHistoryItem,
+    deleteHistoryItem,
+    renameHistoryItem,
+  } = useStore()
 
   useEffect(() => {
     const fetchModels = async () => {
       const response = await fetch("/api/models")
       const data = await response.json()
       setModels(data.models)
+      if (data.models.length > 0 && !selectedModel) {
+        setSelectedModel(data.models[0])
+      }
     }
     fetchModels()
-  }, [])
+  }, [selectedModel, setModels, setSelectedModel])
 
-  useEffect(() => {
-    const savedHistory = localStorage.getItem("chatHistory")
-    if (savedHistory) {
-      setHistory(JSON.parse(savedHistory))
-    }
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem("chatHistory", JSON.stringify(history))
-  }, [history])
-
-  const { messages, isLoading, input, status ,setInput, append, setMessages } = useChat({
+  const { messages, isLoading, input, status, setInput, append, setMessages, stop } = useChat({
     api: "/api/chat",
     body: {
       model: selectedModel,
+      system: systemPrompt,
     },
     initialMessages: [
       {
@@ -63,28 +63,25 @@ export function ChatForm({ className, ...props }: React.ComponentProps<"form">) 
     handleSaveChat()
   }, [messages])
 
-  const handleSaveChat = () => {
+  const handleSaveChat = useCallback(() => {
     if (messages.length > 1) {
       const chatName = messages[1].content.substring(0, 20) + "..."
       const existingChatIndex = history.findIndex((h) => h.name === chatName)
 
       if (existingChatIndex !== -1) {
-        const newHistory = [...history]
-        newHistory[existingChatIndex].messages = JSON.stringify(messages)
-        setHistory(newHistory)
+        updateHistoryItem(existingChatIndex, { name: chatName, messages: JSON.stringify(messages) })
       } else {
-        const newHistory = [...history, { name: chatName, messages: JSON.stringify(messages) }]
-        setHistory(newHistory)
+        addHistoryItem({ name: chatName, messages: JSON.stringify(messages) })
       }
     }
-  }
+  }, [messages, history, updateHistoryItem, addHistoryItem])
 
-  const handleSelectChat = (chatMessages: string) => {
+  const handleSelectChat = useCallback((chatMessages: string) => {
     setCurrentChat(chatMessages)
     setMessages(JSON.parse(chatMessages))
-  }
+  }, [setCurrentChat, setMessages])
 
-  const handleNewChat = () => {
+  const handleNewChat = useCallback(() => {
     handleSaveChat()
     setCurrentChat("")
     setMessages([
@@ -94,7 +91,7 @@ export function ChatForm({ className, ...props }: React.ComponentProps<"form">) 
         content: "Hello! How can I help you today?",
       },
     ])
-  }
+  }, [handleSaveChat, setCurrentChat, setMessages])
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -109,22 +106,10 @@ export function ChatForm({ className, ...props }: React.ComponentProps<"form">) 
     }
   }
 
-  const handleDeleteChat = (index: number) => {
-    const newHistory = [...history]
-    newHistory.splice(index, 1)
-    setHistory(newHistory)
-  }
-
-  const handleRenameChat = (index: number, newName: string) => {
-    const newHistory = [...history]
-    newHistory[index].name = newName
-    setHistory(newHistory)
-  }
-
   return (
     <div className="flex h-full">
-      <Navbar selectedModel={selectedModel} onModelChange={setSelectedModel} models={models} />
-      <HistorySidebar history={history} onSelectChat={handleSelectChat} onDeleteChat={handleDeleteChat} onRenameChat={handleRenameChat} onNewChat={handleNewChat} />
+      <Navbar />
+      <HistorySidebar onSelectChat={handleSelectChat} onNewChat={handleNewChat} />
       <main
         className={cn(
           "ring-none mx-auto flex h-svh max-h-svh w-full max-w-[50rem] flex-col items-stretch border-none pt-16",
@@ -168,19 +153,32 @@ export function ChatForm({ className, ...props }: React.ComponentProps<"form">) 
               </Tooltip>
             </div>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full enabled:bg-gradient-to-br enabled:from-[#bbaaff] enabled:to-[#8f80ff] enabled:text-white"
-                  disabled={!input.trim()}
-                >
-                  <Send size={16} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent sideOffset={12}>Submit</TooltipContent>
-            </Tooltip>
+            {isLoading ? (
+              <Button
+                onClick={stop}
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                type="button"
+              >
+                <StopCircle size={16} />
+              </Button>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full enabled:bg-gradient-to-br enabled:from-[#bbaaff] enabled:to-[#8f80ff] enabled:text-white"
+                    disabled={!input.trim()}
+                    type="submit"
+                  >
+                    <Send size={16} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent sideOffset={12}>Submit</TooltipContent>
+              </Tooltip>
+            )}
           </div>
         </form>
       </main>
